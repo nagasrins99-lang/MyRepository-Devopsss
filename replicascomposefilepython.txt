@@ -1,0 +1,44 @@
+---
+services:
+  db:
+
+    image: nagasrins/p1:dbimage
+    ports:
+      - "3306:3306"
+    deploy:
+      replicas: 1
+
+  auth_service:
+
+    image: nagasrins/p1:authimage
+    ports:
+      - "5001:5001"
+    deploy:
+      replicas: 3
+
+
+  book_service:
+
+    image: nagasrins/p1:bookimage
+    ports:
+      - "5002:5002"
+    deploy:
+      replicas: 2
+
+ 
+  borrow_service:
+
+    image: nagasrins/p1:borrowimage
+    ports:
+      - "5003:5003"
+    deploy:
+      replicas: 3
+
+
+  frontend:
+
+    image: nagasrins/p1:frontendimage
+    ports:
+      - "5000:5000"
+    deploy:
+      replicas: 2
