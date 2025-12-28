@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+   tools{
+       maven "mymaven"
+   }
+    stages {
+        stage('code') {
+            steps {
+               git 'https://github.com/nagasrins99-lang/dockerwebapp.git'
+            }
+        }
+        stage("Build"){
+            steps{
+                sh 'mvn clean package'
+            }
+        }
+        stage("artifact"){
+            steps{
+                echo 'hi'
+              nexusArtifactUploader artifacts: [[artifactId: 'vprofile', classifier: '', file: 'target/vprofile-v2.war', type: 'WAR']], credentialsId: 'nexus-admin', groupId: 'com.visualpathit', nexusUrl: '34.227.157.248:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'nagrepo', version: 'v2' 
+            }
+        }
+    }
+}
