@@ -1,0 +1,90 @@
+pipeline {
+    agent {
+        node{
+            label "docker"
+        }
+    }
+   
+
+    stages {
+        stage('code') {
+            steps {
+              git 'https://github.com/nagasrins99-lang/python-code-library-app.git'
+            }
+        }
+        stage("CQA"){
+            steps{
+                script{
+         def scannerHome = tool 'mysonar';
+                 withSonarQubeEnv("mysonar") {
+                
+                       sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=mysonarproject \
+                              -Dsonar.projectName=python-code-library-app \
+                              -Dsonar.sources=. \
+                              -Dsonar.language=py \
+                              -Dsonar.sourceEncoding=UTF-8 \
+                              -Dsonar.python.version=3 \
+                              -Dsonar.python.coverage.reportPaths=coverage.xml
+                        """
+
+                  }
+                }
+            }
+        }
+        stage("dockerimage"){
+            steps{
+            
+                sh 'docker build -t dbimage ./database'
+                sh 'docker build -t authimage ./auth'
+                sh 'docker build -t bookimage ./book'
+                sh 'docker build -t borrowimage ./borrow'
+                sh 'docker build -t frontendimage . '
+            
+            }
+        }
+        stage("scanimage"){
+            steps{
+                sh 'trivy image dbimage'
+                sh 'trivy image authimage'
+                sh 'trivy image bookimage'
+                sh 'trivy image borrowimage'
+                sh 'trivy image frontendimage'
+            }
+        }
+        stage("tag-push"){
+            steps{
+            
+                sh 'docker tag dbimage nagasrins/p1:dbimage'
+                sh 'docker tag authimage nagasrins/p1:authimage'
+                sh 'docker tag bookimage nagasrins/p1:bookimage'
+                sh 'docker tag borrowimage nagasrins/p1:borrowimage'
+                sh 'docker tag frontendimage nagasrins/p1:frontendimage'
+ 
+            }
+        }
+        stage("dockerpush"){
+            steps {
+          script {
+           withDockerRegistry(credentialsId: 'dockerhub-id') {
+           
+                        sh 'docker push nagasrins/p1:dbimage'
+                        sh 'docker push nagasrins/p1:authimage'
+                        sh 'docker push nagasrins/p1:bookimage'
+                        sh 'docker push nagasrins/p1:borrowimage'
+                        sh 'docker push nagasrins/p1:frontendimage'
+
+                  } 
+                } 
+            }
+        }
+        
+     
+        stage("Deploy"){
+            steps{
+                sh 'docker stack deploy nagasri --compose-file=/home/ec2-user/jenkins/workspace/pythonproject/compose.yml'
+            }
+        }
+    }
+}
